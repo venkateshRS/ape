@@ -33,20 +33,20 @@
     var
 
     /*
-     * Initialisation Function 
+     * Initialisation Function
      * @args: arguments object defined in page
      */
     init = function(args){
     
         // Get configuration from args or default
-        conf.version     = version;
-        conf.customer_id = args['customer_id'];
-        conf.load        = args['load'].getTime() || (new Date).getTime();
-        conf.ad_class    = args['ad-class'] || 'ape-ad';
-        conf.debug       = args['debug']    || false;
-        conf.cookie      = args['cookie']   || '_ape';
-        conf.callback    = args['callback'] || '_ape.callback';
-        conf.endpoint    = args['endpoint'] || 'beacon.js';
+        conf.version      = version;
+        conf.customer_id  = args['customer_id'];
+        conf.load         = args['load'].getTime() || (new Date).getTime();
+        conf.class_prefix = args['class_prefix'] || 'ape';
+        conf.debug        = args['debug']    || false;
+        conf.cookie       = args['cookie']   || '_ape';
+        conf.callback     = args['callback'] || '_ape.callback';
+        conf.endpoint     = args['endpoint'] || 'beacon.js';
 
         if(conf.debug){
             win._ape.conf = conf;
@@ -57,7 +57,6 @@
 
         // Build the request data payload
         payload = {
-            ac: conf.ad_class,              // Ad class prefix
             cc: get_cookie(conf.cookie),    // The APE cookie
             db: conf.debug,                 // Debug switch
             dl: win.location.href,          // Page URL
@@ -67,9 +66,10 @@
             id: conf.customer_id,           // The customer account ID
             ld: conf.load,                  // Page load time
             lg: win.navigator.language,     // Browser language
+            pc: get_placeholder_classes(),  // The set of placeholder classes on this page
+            px: conf.class_prefix,          // Placeholder class prefix
             sc: win.screen.colorDepth,      // Screen colour depth
             sh: win.screen.height,          // Screen height
-            st: get_ad_unit_classes(),      // The set of Ad Unit ids on this page
             sw: win.screen.width,           // Screen width
             ua: window.navigator.userAgent, // User Agent
             vr: conf.version,               // Version number of this script
@@ -169,17 +169,17 @@
 
 
     /**
-     * Set the ad content on the page
-     * @ad_content an object where the key is an element class and the value is html content
+     * Set the components on the page
+     * @components an object where the key is a placeholder class and the value is html content
      */
-    set_ad_content = function(ad_content){
+    set_components = function(components){
         var ad_styles = "";
-        for( ad_class in ad_content ){
-            ad_units = doc.getElementsByClassName(ad_class);
-            for(i in ad_units){
-                ad_units[i].innerHTML = ad_content[ad_class].content;
+        for( placeholder_class in components ){
+            placeholder = doc.getElementsByClassName(placeholder_class);
+            for(i in placeholder){
+                placeholder[i].innerHTML = components[placeholder_class].content;
             }
-            ad_styles += ad_content[ad_class].styles;
+            ad_styles += components[placeholder_class].styles;
         }
         add_style_tag(ad_styles);
     },
@@ -195,8 +195,8 @@
             set_cookie(conf.cookie, payload.visitor_id, 90);
         }
 
-        if( 'ad_content' in payload ){
-            set_ad_content(payload.ad_content);
+        if( 'components' in payload ){
+            set_components(payload.components);
         }
 
         if( conf.debug && console ){
@@ -206,11 +206,11 @@
 
 
     /**
-     * Return a string of all classes assigned to ad-units in the page
+     * Return a string of all classes assigned to placeholders on the page
      */
-    get_ad_unit_classes = function(){
+    get_placeholder_classes = function(){
         var
-        elements = doc.getElementsByClassName(conf.ad_class),
+        elements = doc.getElementsByClassName(conf.class_prefix),
         classes  = []
         for( i in elements ){
             classes.push(elements[i].className);

@@ -12,9 +12,9 @@ import uuid
 from types import *
 
 
-class PersonalisedAd(object):
+class Component(object):
 
-    def __init__(self, id, content, styles):
+    def __init__(self, id, content, styles=""):
         """Construct an advert with personalised content and styles"""
         self.id      = id
         self.content = content
@@ -44,23 +44,30 @@ class Visitor(object):
         # TODO Load data from DB
         return list()
 
-    def personalised_ads(self, ad_ids=[]):
+    def components(self, ad_ids=[]):
         """Return all ads with personalised content for this visitor. Optionally filter by ad_ids."""
         # TODO Load data from DB
         return [
-            PersonalisedAd(id  ='W3P0xOxK3rLV',
+            Component(id  ='W3P0xOxK3rLV',
                 content='<strong>Ad Number One</strong><br><a href="#">Buy Things!</a>',
-                styles ='.ape-ad-W3P0xOxK3rLV {color: red;}'),
-            PersonalisedAd(id  ='A9GDeXaib6kZ',
+                styles ='.ape-W3P0xOxK3rLV {color: red;}'),
+            Component(id  ='A9GDeXaib6kZ',
                 content='<strong>Ad Number Two</strong><br><a href="#">Buy Things!</a>',
-                styles ='.ape-ad-A9GDeXaib6kZ {color: green;}'),
-            PersonalisedAd(id  ='oXjwYAV0bd9T',
+                styles ='.ape-A9GDeXaib6kZ {color: green;}'),
+            Component(id  ='oXjwYAV0bd9T',
                 content='<strong>Ad Number Three</strong><br><a href="#">Buy Things!</a>',
-                styles ='.ape-ad-oXjwYAV0bd9T {color: blue;}'),
-            PersonalisedAd(id  ='nNQQOYbFBbPI',
+                styles ='.ape-oXjwYAV0bd9T {color: blue;}'),
+            Component(id  ='nNQQOYbFBbPI',
                 content='<strong>Ad Number Four</strong><br><a href="#">Buy Things!</a>',
-                styles ='.ape-ad-nNQQOYbFBbPI {color: purple;}'),
+                styles ='.ape-nNQQOYbFBbPI {color: purple;}'),
         ]
+       
+    @classmethod
+    def get(cls, customer, id):
+      """Return visitor object with id, for customer"""
+      # TODO Find visitor
+      return Visitor(customer, id)
+      
 
 
 class Customer(object):
@@ -71,15 +78,17 @@ class Customer(object):
 
     def is_site_owner(self, url):
         """Test if this customer is owner over this site"""
+        # TODO Test site ownership
         return True
 
     def get_visitor(self, id=None):
-        """Return Visitor object with id belonging to this customer"""
-        return Visitor(self, id)
+        """Return Visitor object with id, belonging to this customer"""
+        return Visitor.get(self, id)
 
     @classmethod
     def get(cls, id):
         """Return Customer object with id"""
+        # TODO Find customer
         return Customer(id)
 
 
@@ -89,12 +98,13 @@ if __name__ == "__main__":
     import unittest
 
 
-    class AdvertModel(unittest.TestCase):
+    class ComponentModel(unittest.TestCase):
 
         def test_constructor(self):
-            a = Advert(id='demo-id', content='Demo Content')
+            a = Component(id='demo-id', content='Demo Content', styles="xxx")
             self.assertEqual(a.id,      "demo-id")
             self.assertEqual(a.content, "Demo Content")
+            self.assertEqual(a.styles,  "xxx")
             
 
     class VisitorModel(unittest.TestCase):
@@ -105,9 +115,11 @@ if __name__ == "__main__":
         def test_constructor(self):
             v = Visitor(self.customer, 'demo-id')
             self.assertEqual(v.id, "demo-id")
-
-            v = Visitor(self.customer)
-            self.assertEqual(v.id, "visitor-123") # Generated
+            
+        def test_get(self):
+            v = Visitor.get(self.customer, "demo-id")
+            self.assertEqual(v.id, "demo-id")
+            self.assertEqual(v.customer, self.customer)
 
         def test_update_with_data(self):
             v1 = Visitor(self.customer, 'demo-id')
@@ -123,9 +135,9 @@ if __name__ == "__main__":
             v = Visitor(self.customer, 'demo-id')
             self.assertIsInstance(v.segments(), list)
 
-        def test_personalised_ads(self):
+        def test_components(self):
             v = Visitor(self.customer, 'demo-id')
-            self.assertIsInstance(v.personalised_ads(), list)
+            self.assertIsInstance(v.components(), list)
 
 
     class CustomerModel(unittest.TestCase):
@@ -143,10 +155,6 @@ if __name__ == "__main__":
             v = c.get_visitor(id='demo-id')
             self.assertIs(v.customer, c)
             self.assertEqual(v.id, "demo-id")
-
-            v = c.get_visitor()
-            self.assertIs(v.customer, c)
-            self.assertEqual(v.id, "visitor-123") # generated
 
         def test_is_site_owner(self):
             c = Customer(id='demo-id')
