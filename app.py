@@ -111,17 +111,17 @@ def beacon():
     return make_jsonp_response(payload)
 
 
-# @app.errorhandler(HTTPException)
-# def handle_error(e):
-#     print "HTTPException: %s, %s, %s" % (e.code, e.name, e.description)
-#     return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
+@app.errorhandler(HTTPException)
+def handle_error(e):
+    print "HTTPException: %s, %s, %s" % (e.code, e.name, e.description)
+    return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
 
 
-# @app.errorhandler(Exception)
-# def handle_error(e):
-#     print "Exception: %s" % e
-#     e = InternalServerError()
-#     return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
+@app.errorhandler(Exception)
+def handle_error(e):
+    print "Exception: %s" % e
+    e = InternalServerError()
+    return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
 
 
 if __name__ == "__main__":
