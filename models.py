@@ -9,7 +9,6 @@
 
 import time
 import uuid
-from types import *
 
 
 class Component(object):
