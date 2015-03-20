@@ -119,7 +119,7 @@ def handle_error(e):
 
 @app.errorhandler(Exception)
 def handle_error(e):
-    print "Exception: %s" % e
+    print "Exception: %s, %s" % (e, e.__class__)
     e = InternalServerError()
     return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
 
