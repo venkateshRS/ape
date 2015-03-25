@@ -9,8 +9,14 @@ from flask import Flask, request, json, make_response, abort
 from models import Customer, Visitor
 from werkzeug.exceptions import HTTPException, BadRequest, InternalServerError, Conflict
 
-
+# The app
 app = Flask(__name__, static_folder='static', static_url_path='')
+
+# Required to ensure HTTP exception handers work in debug & test
+# See: http://flask.pocoo.org/docs/0.10/api/#flask.Flask.trap_http_exception
+app.config['TRAP_HTTP_EXCEPTIONS'] = True
+
+# Default JSONP callback
 JSONP = "_ape.callback"
 
 
@@ -113,13 +119,15 @@ def beacon():
 
 @app.errorhandler(HTTPException)
 def handle_error(e):
-    print "HTTPException: %s, %s, %s" % (e.code, e.name, e.description)
+    # TODO use logger
+    # print "HTTPException: %s, %s, %s" % (e.code, e.name, e.description)
     return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
 
 
 @app.errorhandler(Exception)
 def handle_error(e):
-    print "Exception: %s, %s" % (e, e.__class__)
+    # TODO use logger
+    # print "Exception: %s, %s" % (e, e.__class__)
     e = InternalServerError()
     return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
 
