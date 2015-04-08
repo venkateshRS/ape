@@ -198,9 +198,13 @@
         if( 'components' in payload ){
             set_components(payload.components);
         }
-
-        if( conf.debug && console ){
+        
+        if( conf.debug && console && console.log && console.error ){
             console.log(payload);
+    
+            if( payload.code && payload.code != 200 ){
+                console.error(payload.name + ' [' + payload.code + '] ' + payload.description);
+            }
         }
     },
 

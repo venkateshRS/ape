@@ -20,11 +20,13 @@ app.config['TRAP_HTTP_EXCEPTIONS'] = True
 JSONP = "_ape.callback"
 
 
-def make_jsonp_response(payload=dict(), status_code=200):
+def make_jsonp_response(payload=dict(), code=200):
     """Make a jsonp response object from a payload dict"""
-    payload['status_code'] = status_code
+    # Response always returns 200 code, to ensure client can handle callback
+    # Actual HTTP code sent in payload
+    payload['code'] = code
     body = "%s(%s)" % (JSONP, json.dumps(payload))
-    response = make_response(body, status_code)
+    response = make_response(body, 200)
     response.headers['Content-Type'] = "application/javascript;charset=utf-8"
     return response
 
@@ -119,7 +121,6 @@ def beacon():
 @app.errorhandler(HTTPException)
 def handle_error(e):
     # TODO use logger
-    # TODO not returning JSON
     # print "HTTPException: %s, %s, %s" % (e.code, e.name, e.description)
     return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
 
