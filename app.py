@@ -77,8 +77,7 @@ def beacon():
     payload = dict() # The response payload
 
     # Respect Do Not Track
-    # Formally "DNT", but Chrome sends "Dnt"
-    if request.headers.get('DNT', False) or request.headers.get('Dnt', False):
+    if request.headers.get('DNT', False):
         raise Conflict("Do Not Track enabled on client")
     
     # Return args in payload in debug mode
@@ -120,6 +119,7 @@ def beacon():
 @app.errorhandler(HTTPException)
 def handle_error(e):
     # TODO use logger
+    # TODO not returning JSON
     # print "HTTPException: %s, %s, %s" % (e.code, e.name, e.description)
     return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
 
