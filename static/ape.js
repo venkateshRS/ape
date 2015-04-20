@@ -10,18 +10,18 @@
      * Get elements by class name
      * For IE <9
      */
-    if(!doc.getElementsByClassName){
-        doc.getElementsByClassName = function(id) {
+    if( !doc.getElementsByClassName ){
+        doc.getElementsByClassName = function(id){
             var
             a = [],
             r = new RegExp('(^| )'+id+'( |$)'),
             e = doc.getElementsByTagName("*"),
             i;
-            for (i=0; i<e.length; i++){
-                if (r.test(e[i].className)){ a[i] = e[i]; }
+            for( i=0; i<e.length; i++ ){
+                if( r.test(e[i].className) ){ a[i] = e[i]; }
             }
             return a;
-        }
+        };
     }
 
 
@@ -40,15 +40,15 @@
     
         // Get configuration from args or default
         conf.version      = version;
-        conf.customer_id  = args['customer_id'];
-        conf.load         = args['load'].getTime() || (new Date).getTime();
-        conf.class_prefix = args['class_prefix'] || 'ape';
-        conf.debug        = args['debug']    || false;
-        conf.cookie       = args['cookie']   || '_ape';
-        conf.callback     = args['callback'] || '_ape.callback';
-        conf.endpoint     = args['endpoint'] || 'beacon.js';
+        conf.customer_id  = args.customer_id;
+        conf.load         = args.load.getTime() || (new Date()).getTime();
+        conf.class_prefix = args.class_prefix || 'ape';
+        conf.debug        = args.debug    || false;
+        conf.cookie       = args.cookie   || '_ape';
+        conf.callback     = args.callback || '_ape.callback';
+        conf.endpoint     = args.endpoint || 'beacon.js';
 
-        if(conf.debug){
+        if( conf.debug ){
             win._ape.conf = conf;
         }
 
@@ -90,13 +90,13 @@
      */
     set_cookie = function(name, value, days){
         var expires = "";
-        if (days) {
+        if( days ){
             var date = new Date();
             date.setTime(date.getTime() + (days*86400000));
             expires = "; expires=" + date.toGMTString();
         }
         doc.cookie = name + "=" + value + expires + "; path=/";
-    }
+    },
 
 
     /**
@@ -104,17 +104,16 @@
      * @name: The name of the cookie to get
      */
     get_cookie = function(name){
-        var
-        cookies = doc.cookie.split('; '),
-        name    = name + '=';
-        for (i in cookies) {
-            cookie = cookies[i]
-            if (cookie.indexOf(name) === 0) {
+        name = name + '=';
+        var cookies = doc.cookie.split('; ');
+        for( var i in cookies ) {
+            cookie = cookies[i];
+            if( cookie.indexOf(name) === 0 ){
                 return cookie.substring(name.length, cookie.length);
             }
         }
         return '';
-    }
+    },
 
 
     /**
@@ -123,8 +122,8 @@
      */
     url_serialize = function(obj) {
         var str = [];
-        for (p in obj){
-            if (obj.hasOwnProperty(p)) {
+        for( var p in obj ){
+            if( obj.hasOwnProperty(p) ){
                 str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
             }
         }
@@ -174,9 +173,9 @@
      */
     set_components = function(components){
         var ad_styles = "";
-        for( placeholder_class in components ){
+        for( var placeholder_class in components ){
             placeholder = doc.getElementsByClassName(placeholder_class);
-            for(i in placeholder){
+            for( var i in placeholder ){
                 placeholder[i].innerHTML = components[placeholder_class].content;
             }
             ad_styles += components[placeholder_class].styles;
@@ -215,8 +214,8 @@
     get_placeholder_classes = function(){
         var
         elements = doc.getElementsByClassName(conf.class_prefix),
-        classes  = []
-        for( i in elements ){
+        classes  = [];
+        for( var i in elements ){
             classes.push(elements[i].className);
         }
         return classes.join(' ');
@@ -229,7 +228,7 @@
 
 
     // Do nothing if customer_id not provided
-    if (win._ape.customer_id && win._ape.customer_id != undefined){
+    if( win._ape.customer_id && win._ape.customer_id !== undefined ){
         init(win._ape);
     }
 
