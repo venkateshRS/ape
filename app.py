@@ -24,7 +24,7 @@ def make_jsonp_response(payload=dict(), code=200):
     """Make a jsonp response object from a payload dict"""
     # Response always returns 200 code, to ensure client can handle callback
     # Actual HTTP code sent in payload
-    payload['code'] = code
+    payload['status_code'] = code
     body = "%s(%s)" % (JSONP, json.dumps(payload))
     response = make_response(body, 200)
     response.headers['Content-Type'] = "application/javascript;charset=utf-8"
@@ -125,7 +125,7 @@ def beacon():
 def handle_error(e):
     # TODO use logger
     # print "HTTPException: %s, %s, %s" % (e.code, e.name, e.description)
-    return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
+    return make_jsonp_response(dict(description=e.description, name=e.name), e.code)
 
 
 @app.errorhandler(Exception)
@@ -133,7 +133,7 @@ def handle_error(e):
     # TODO use logger
     # print "Exception: %s, %s" % (e, e.__class__)
     e = InternalServerError()
-    return make_jsonp_response(dict(description=e.description, code=e.code, name=e.name), e.code)
+    return make_jsonp_response(dict(description=e.description, name=e.name), e.code)
 
 
 if __name__ == "__main__":
