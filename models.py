@@ -3,9 +3,9 @@
 # Author: Craig Russell <craig@craig-russell.co.uk>
 # Models for use in APE
 #
-# Customer
-# Visitor
-# Advert
+# Component : A personalised section of page content
+# Visitor : A visitor to a site
+# Customer : A site owner
 
 import time
 import uuid
@@ -89,75 +89,3 @@ class Customer(object):
         """Return Customer object with id"""
         # TODO Find customer
         return Customer(id)
-
-
-if __name__ == "__main__":
-
-    ## RUN UNIT TESTS ##
-    import unittest
-
-
-    class ComponentModel(unittest.TestCase):
-
-        def test_constructor(self):
-            a = Component(id='demo-id', content='Demo Content', styles="xxx")
-            self.assertEqual(a.id,      "demo-id")
-            self.assertEqual(a.content, "Demo Content")
-            self.assertEqual(a.styles,  "xxx")
-            
-
-    class VisitorModel(unittest.TestCase):
-
-        def setUp(self):
-            self.customer = Customer(id="demo-id")
-
-        def test_constructor(self):
-            v = Visitor(self.customer, 'demo-id')
-            self.assertEqual(v.id, "demo-id")
-            
-        def test_get(self):
-            v = Visitor.get(self.customer, "demo-id")
-            self.assertEqual(v.id, "demo-id")
-            self.assertEqual(v.customer, self.customer)
-
-        def test_update_with_data(self):
-            v1 = Visitor(self.customer, 'demo-id')
-            v2 = v1.update_with_data(dict())
-            self.assertIsInstance(v2, Visitor)
-            self.assertEqual(v1.id, v2.id)
-
-        def test_data(self):
-            v = Visitor(self.customer, 'demo-id')
-            self.assertIsInstance(v.data(), dict)
-
-        def test_segments(self):
-            v = Visitor(self.customer, 'demo-id')
-            self.assertIsInstance(v.segments(), list)
-
-        def test_components(self):
-            v = Visitor(self.customer, 'demo-id')
-            self.assertIsInstance(v.components(), list)
-
-
-    class CustomerModel(unittest.TestCase):
-
-        def test_constructor(self):
-            c = Customer('demo-id')
-            self.assertEqual(c.id, "demo-id")
-
-        def test_get(self):
-            c = Customer.get(id="demo-id")
-            self.assertEqual(c.id, "demo-id")
-
-        def test_get_visitor(self):
-            c = Customer(id='demo-id')
-            v = c.get_visitor(id='demo-id')
-            self.assertIs(v.customer, c)
-            self.assertEqual(v.id, "demo-id")
-
-        def test_is_site_owner(self):
-            c = Customer(id='demo-id')
-            self.assertTrue(c.is_site_owner("http://example.com/path"))
-
-
-    unittest.main(verbosity=2)
