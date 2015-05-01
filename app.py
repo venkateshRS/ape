@@ -33,7 +33,7 @@ def make_jsonp_response(payload=dict(), code=200):
     body = "%s(%s)" % (JSONP, json.dumps(payload))
     response = make_response(body, 200)
     response.headers['Content-Type'] = "application/javascript;charset=utf-8"
-    log.info("JSONP %s" % payload)
+    log.info("JSONP %s" % body)
     return response
 
 
