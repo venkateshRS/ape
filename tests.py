@@ -83,7 +83,6 @@ class TestApp(unittest.TestCase):
         data = unpack_jsonp(payload=rv.data, callback='foobar')
         self.assertIsInstance(data, dict)
 
-
     def test_beacon_visitor_id(self):
         # visitor_id not provided
         rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')

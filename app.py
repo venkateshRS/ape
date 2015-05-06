@@ -22,13 +22,14 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 # See: http://flask.pocoo.org/docs/0.10/api/#flask.Flask.trap_http_exception
 app.config['TRAP_HTTP_EXCEPTIONS'] = True
 
+JSONP_CALLBACK = "_ape.callback"
 
-def make_jsonp_response(payload=dict(), code=200, callback="_ape.callback"):
+def make_jsonp_response(payload=dict(), code=200):
     """Make a jsonp response object from a payload dict"""
     # Response always returns 200 code, to ensure client can handle callback
     # Actual HTTP code sent in payload
     payload['status_code'] = code
-    body = "%s(%s)" % (callback, json.dumps(payload))
+    body = "%s(%s)" % (JSONP_CALLBACK, json.dumps(payload))
     response = make_response(body, 200)
     response.headers['Content-Type'] = "application/javascript;charset=utf-8"
     logger.debug(" JSONP %s" % body)
@@ -38,9 +39,12 @@ def make_jsonp_response(payload=dict(), code=200, callback="_ape.callback"):
 @app.route('/beacon.js')
 def beacon():
 
+    global JSONP_CALLBACK
+    JSONP_CALLBACK = request.args.get('jsonp', "_ape.callback")
+
     # Get args data or defaults
     args = dict()
-    args['jsonp']          = request.args.get('jsonp', "_ape.callback") # JSONP callback
+    args['jsonp']          = JSONP_CALLBACK                 # JSONP callback function
     args['visitor_id']     = request.args.get('cc', "")     # The APE cookie visitor_id
     args['debug']          = request.args.get('db', "")     # Debug switch
     args['page_url']       = request.args.get('dl', "")     # Page URL
@@ -119,7 +123,7 @@ def beacon():
                     payload['components'][key]['styles']  = component.styles
                     payload['components'][key]['content'] = component.content
     
-    return make_jsonp_response(payload, callback=args['jsonp'])
+    return make_jsonp_response(payload)
 
 
 @app.errorhandler(HTTPException)
