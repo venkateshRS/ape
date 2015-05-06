@@ -21,16 +21,13 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 # See: http://flask.pocoo.org/docs/0.10/api/#flask.Flask.trap_http_exception
 app.config['TRAP_HTTP_EXCEPTIONS'] = True
 
-# Default JSONP callback
-JSONP = "_ape.callback"
 
-
-def make_jsonp_response(payload=dict(), code=200):
+def make_jsonp_response(payload=dict(), code=200, callback="_ape.callback"):
     """Make a jsonp response object from a payload dict"""
     # Response always returns 200 code, to ensure client can handle callback
     # Actual HTTP code sent in payload
     payload['status_code'] = code
-    body = "%s(%s)" % (JSONP, json.dumps(payload))
+    body = "%s(%s)" % (callback, json.dumps(payload))
     response = make_response(body, 200)
     response.headers['Content-Type'] = "application/javascript;charset=utf-8"
     log.info("JSONP %s" % body)
@@ -40,13 +37,9 @@ def make_jsonp_response(payload=dict(), code=200):
 @app.route('/beacon.js')
 def beacon():
 
-    # Set our jsonp callback function first, as any exceptions may depend upon it
-    global JSONP
-    JSONP = request.args.get('jsonp', JSONP)
-
     # Get args data or defaults
     args = dict()
-    args['jsonp']          = JSONP
+    args['jsonp']          = request.args.get('jsonp', "_ape.callback") # JSONP callback
     args['visitor_id']     = request.args.get('cc', "")     # The APE cookie visitor_id
     args['debug']          = request.args.get('db', "")     # Debug switch
     args['page_url']       = request.args.get('dl', "")     # Page URL
@@ -75,7 +68,7 @@ def beacon():
 
     # Deserialise timestamp
     try:
-        args['timestamp'] = DT.datetime.fromtimestamp(int(args['timestamp']) / 1000)
+        args['timestamp'] = DT.datetime.utcfromtimestamp(int(args['timestamp']) / 1000)
     except ValueError:
         args['timestamp'] = DT.datetime.now()
 
@@ -125,7 +118,7 @@ def beacon():
                     payload['components'][key]['styles']  = component.styles
                     payload['components'][key]['content'] = component.content
     
-    return make_jsonp_response(payload)
+    return make_jsonp_response(payload, callback=args['jsonp'])
 
 
 @app.errorhandler(HTTPException)
