@@ -5,6 +5,7 @@
 
 import os
 import json
+import logging
 import unittest
 import datetime as DT
 from app import app as beacon
@@ -19,6 +20,7 @@ class TestApp(unittest.TestCase):
 
     def setUp(self):
         beacon.config['TESTING'] = True
+        logging.disable(logging.CRITICAL)
         self.beacon = beacon.test_client()
 
     def test_root(self):
@@ -75,11 +77,11 @@ class TestApp(unittest.TestCase):
         data = unpack_jsonp(payload=rv.data, callback='foobar')
         self.assertIsInstance(data, dict)
 
-        # TODO jsonp provided in error response
+        # configurable callback in error response
         rv = self.beacon.get('/beacon.js?jsonp=foobar')
-        # self.assertTrue(rv.data.startswith('foobar'))
-        # data = unpack_jsonp(payload=rv.data, callback='foobar')
-        # self.assertIsInstance(data, dict)
+        self.assertTrue(rv.data.startswith('foobar'))
+        data = unpack_jsonp(payload=rv.data, callback='foobar')
+        self.assertIsInstance(data, dict)
 
 
     def test_beacon_visitor_id(self):
