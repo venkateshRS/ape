@@ -11,8 +11,9 @@ from models import Customer, Visitor
 from werkzeug.exceptions import HTTPException, BadRequest, InternalServerError, Conflict
 
 # Logging config
-logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s', filename='var/logging.log', level=logging.INFO)
-log = logging.getLogger('ape')
+logger = logging.getLogger('APE')
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler()) # Log to STDOUT for now
 
 # The app
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -30,7 +31,7 @@ def make_jsonp_response(payload=dict(), code=200, callback="_ape.callback"):
     body = "%s(%s)" % (callback, json.dumps(payload))
     response = make_response(body, 200)
     response.headers['Content-Type'] = "application/javascript;charset=utf-8"
-    log.info("JSONP %s" % body)
+    logger.debug(" JSONP %s" % body)
     return response
 
 
@@ -123,13 +124,13 @@ def beacon():
 
 @app.errorhandler(HTTPException)
 def handle_error(e):
-    log.error("HTTPException %s %s %s" % (e.code, e.name, e.description))
+    logger.error("HTTPException %s %s %s" % (e.code, e.name, e.description))
     return make_jsonp_response(dict(description=e.description, name=e.name), e.code)
 
 
 @app.errorhandler(Exception)
 def handle_error(e):
-    log.error("Exception %s %s" % (e.__class__.__name__, e.message))
+    logger.error("Exception %s %s" % (e.__class__.__name__, e.message))
     e = InternalServerError()
     return make_jsonp_response(dict(description=e.description, name=e.name), e.code)
 
