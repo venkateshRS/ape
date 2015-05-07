@@ -9,6 +9,9 @@
 
 import time
 import uuid
+from config import sql_engine, SQL_Session, SQL_Base
+from sqlalchemy import Column, Integer, String, PickleType
+
 
 
 class Component(object):
@@ -69,23 +72,60 @@ class Visitor(object):
       
 
 
-class Customer(object):
+class Customer(SQL_Base):
 
-    def __init__(self, id):
-        """Construct a Customer object with id"""
-        self.id = id
+    __tablename__ = 'customers'
+
+    id   = Column(Integer, primary_key=True)
+    name = Column(String)
+    sites = Column(PickleType, default=list())
+
+    def __repr__(self):
+        return "<Customer [%s] %s, %s>" % (self.id, self.name, " ".join(self.sites))
 
     def is_site_owner(self, url):
         """Test if this customer is owner over this site"""
-        # TODO Test site ownership
-        return True
+        
+        for protocol in ["https://", "http://", "//"]:
+            url = url.lstrip(protocol)
+
+        for site in self.sites:
+            if url.startswith(site): return True
+
+        return False
 
     def get_visitor(self, id=None):
         """Return Visitor object with id, belonging to this customer"""
+        # TODO query for visitor
         return Visitor.get(self, id)
 
     @classmethod
     def get(cls, id):
         """Return Customer object with id"""
-        # TODO Find customer
-        return Customer(id)
+        session = SQL_Session()
+        result = session.query(Customer).filter(Customer.id == id).first()
+        session.close()
+        return result
+
+
+if __name__ == "__main__":
+
+    # Build DB
+    SQL_Base.metadata.create_all(sql_engine)
+
+    # Get a session object
+    session = SQL_Session()
+
+    session.add(Customer(name="Apple", sites=["apple.com"]))
+    session.add(Customer(name="Google", sites=["google.com", "google.co.uk"]))
+    session.add(Customer(name="Amazon"))
+
+    # Save everything
+    session.commit()
+
+    # Print everything
+    for row in session.query(Customer).all():
+        print row
+
+    # Close the session
+    session.close()

@@ -132,11 +132,11 @@ def handle_error(e):
     return make_jsonp_response(dict(description=e.description, name=e.name), e.code)
 
 
-@app.errorhandler(Exception)
-def handle_error(e):
-    logger.error("Exception %s %s" % (e.__class__.__name__, e.message))
-    e = InternalServerError()
-    return make_jsonp_response(dict(description=e.description, name=e.name), e.code)
+# @app.errorhandler(Exception)
+# def handle_error(e):
+#     logger.error("Exception %s %s" % (e.__class__.__name__, e.message))
+#     e = InternalServerError()
+#     return make_jsonp_response(dict(description=e.description, name=e.name), e.code)
 
 
 if __name__ == "__main__":

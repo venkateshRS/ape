@@ -10,6 +10,7 @@ import unittest
 import datetime as DT
 from app import app as beacon
 from models import Customer, Visitor, Component
+from config import sql_engine, SQL_Session, SQL_Base
 
 def unpack_jsonp(payload, callback="_ape.callback"):
     """Retun object structure from JSONP payload string"""
@@ -22,6 +23,18 @@ class TestApp(unittest.TestCase):
         beacon.config['TESTING'] = True
         logging.disable(logging.CRITICAL)
         self.beacon = beacon.test_client()
+
+        # Create Records in DB
+        SQL_Base.metadata.create_all(sql_engine)
+        self.session = SQL_Session()
+        self.customer = Customer(name="Foo Bar", sites=["foo.com"])
+        self.session.add(self.customer)
+        self.session.commit()
+
+        self.beacon_url = "/beacon.js?id=%s&dl=http%%3A//foo.com" % self.customer.id
+        
+    def tearDown(self):
+        self.session.close()
 
     def test_root(self):
         rv = self.beacon.get('/')
@@ -38,14 +51,14 @@ class TestApp(unittest.TestCase):
         self.assertEqual(data['status_code'], 400) # Bad Request
 
         # Request with Page URL (dl)
-        rv = self.beacon.get('/beacon.js?dl=http%3A//example.com')
+        rv = self.beacon.get('/beacon.js?dl=http%3A//foo.com')
         data = unpack_jsonp(rv.data)
         self.assertEqual(rv.mimetype, "application/javascript")
         self.assertEqual(rv.status_code, 200) # Response always returns with 200 in the headers
         self.assertEqual(data['status_code'], 400) # Bad Request
 
         # Request with Customer ID (id)
-        rv = self.beacon.get('/beacon.js?id=123456')
+        rv = self.beacon.get('/beacon.js?id=1')
         data = unpack_jsonp(rv.data)
         self.assertEqual(rv.mimetype, "application/javascript")
         self.assertEqual(rv.status_code, 200) # Response always returns with 200 in the headers
@@ -53,12 +66,12 @@ class TestApp(unittest.TestCase):
 
     def test_beacon_debug(self):
         # debug not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com')
+        rv = self.beacon.get(self.beacon_url)
         data = unpack_jsonp(rv.data)
         self.assertNotIn('args', data) # args not returned
         
         # debug provided (db)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertIn('args', data) # args returned
         self.assertIn('debug', data['args'])
@@ -66,13 +79,13 @@ class TestApp(unittest.TestCase):
 
     def test_beacon_jsonp(self):
         # jsonp not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertTrue(rv.data.startswith('_ape.callback'))
         self.assertIsInstance(data, dict)
         
         # jsonp provided (jsonp)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&jsonp=foobar')
+        rv = self.beacon.get(self.beacon_url + '&db=true&jsonp=foobar')
         self.assertTrue(rv.data.startswith('foobar'))
         data = unpack_jsonp(payload=rv.data, callback='foobar')
         self.assertIsInstance(data, dict)
@@ -85,45 +98,45 @@ class TestApp(unittest.TestCase):
 
     def test_beacon_visitor_id(self):
         # visitor_id not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertIn('visitor_id', data.keys()) # new visitor id returned
         
         # visitor_id provided (cc)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&cc=foobar')
+        rv = self.beacon.get(self.beacon_url + '&db=true&cc=foobar')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['visitor_id'], 'foobar')
 
     def test_beacon_referrer_url(self):
         # referrer_url not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['referrer_url'], "")
         
         # referrer_url provided (dr)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&dr=foobar')
+        rv = self.beacon.get(self.beacon_url + '&db=true&dr=foobar')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['referrer_url'], "foobar")
 
     def test_beacon_page_title(self):
         # page_title not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['page_title'], "")
         
         # page_title provided (dt)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&dt=foobar')
+        rv = self.beacon.get(self.beacon_url + '&db=true&dt=foobar')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['page_title'], "foobar")
 
     def test_beacon_event(self):
         # event not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['event'], "")
         
         # event provided (ev)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&ev=foobar')
+        rv = self.beacon.get(self.beacon_url + '&db=true&ev=foobar')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['event'], "foobar")
 
@@ -131,13 +144,13 @@ class TestApp(unittest.TestCase):
         # timestamp not provided
         format = "%a, %d %b %Y %H:%M:%S %Z"
 
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         timestamp = data['args']['timestamp']
         self.assertIsInstance(DT.datetime.strptime(timestamp, format), DT.datetime)
         
         # timestamp provided (ld)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&ld=1490916389')
+        rv = self.beacon.get(self.beacon_url + '&db=true&ld=1490916389')
         data = unpack_jsonp(rv.data)
         timestamp = data['args']['timestamp']
         self.assertIsInstance(DT.datetime.strptime(timestamp, format), DT.datetime)
@@ -145,91 +158,91 @@ class TestApp(unittest.TestCase):
 
     def test_beacon_language(self):
         # language not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['language'], "")
         
         # language provided (lg)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&lg=foobar')
+        rv = self.beacon.get(self.beacon_url + '&db=true&lg=foobar')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['language'], "foobar")
 
     def test_beacon_placeholders(self):
         # placeholders not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['placeholders'], "")
         
         # placeholders provided (pc)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&pc=ape-foo%20ape-bar%20foo-bar')
+        rv = self.beacon.get(self.beacon_url + '&db=true&pc=ape-foo%20ape-bar%20foo-bar')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['placeholders'], "ape-foo ape-bar foo-bar")
 
     def test_beacon_prefix(self):
         # prefix not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&pc=ape-foo%20ape-bar%20foo-baz')
+        rv = self.beacon.get(self.beacon_url + '&db=true&pc=ape-foo%20ape-bar%20foo-baz')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['prefix'], "ape")
         self.assertEqual(data['args']['placeholder_ids'], ["foo", "bar"])
         
         # prefix provided (px)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&pc=ape-foo%20ape-bar%20foo-baz&px=foo')
+        rv = self.beacon.get(self.beacon_url + '&db=true&pc=ape-foo%20ape-bar%20foo-baz&px=foo')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['prefix'], "foo")
         self.assertEqual(data['args']['placeholder_ids'], ["baz"])
 
     def test_beacon_screen_colour(self):
         # screen_colour not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['screen_colour'], 0)
         
         # screen_colour provided (sc)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&sc=64')
+        rv = self.beacon.get(self.beacon_url + '&db=true&sc=64')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['screen_colour'], 64)
 
     def test_beacon_screen_height(self):
         # screen_height not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['screen_height'], 0)
         
         # screen_height provided (sh)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&sh=1000')
+        rv = self.beacon.get(self.beacon_url + '&db=true&sh=1000')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['screen_height'], 1000)
 
     def test_beacon_screen_width(self):
         # screen_width not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['screen_width'], 0)
         
         # screen_width provided (sw)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&sw=1000')
+        rv = self.beacon.get(self.beacon_url + '&db=true&sw=1000')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['screen_width'], 1000)
 
     def test_beacon_user_agent(self):
         # user_agent not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['user_agent'], "")
         
         # user_agent provided (ua)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&ua=foobar')
+        rv = self.beacon.get(self.beacon_url + '&db=true&ua=foobar')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['user_agent'], "foobar")
 
     def test_beacon_script_version(self):
         # script_version not provided
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true')
+        rv = self.beacon.get(self.beacon_url + '&db=true')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['script_version'], "0.0")
         
         # script_version provided (vr)
-        rv = self.beacon.get('/beacon.js?id=foo&dl=http%3A//bar.com&db=true&vr=1.0')
+        rv = self.beacon.get(self.beacon_url + '&db=true&vr=1.0')
         data = unpack_jsonp(rv.data)
         self.assertEqual(data['args']['script_version'], "1.0")
 
@@ -278,23 +291,36 @@ class TestVisitorModel(unittest.TestCase):
 
 class TestCustomerModel(unittest.TestCase):
 
+    def setUp(self):
+        SQL_Base.metadata.create_all(sql_engine)
+        self.session = SQL_Session()
+
+    def tearDown(self):
+        self.session.close()
+
     def test_constructor(self):
-        c = Customer('demo-id')
-        self.assertEqual(c.id, "demo-id")
+        c = Customer(name='foobar', sites=["foo.com", "bar.co.uk"])
+        self.assertEqual(c.name, "foobar")
+        self.assertEqual(c.sites, ["foo.com", "bar.co.uk"])
 
     def test_get(self):
-        c = Customer.get(id="demo-id")
-        self.assertEqual(c.id, "demo-id")
+        c = Customer(name='foobar', sites=["foo.com", "bar.co.uk"])
+        self.session.add(c)
+        self.session.commit()
+
+        b = Customer.get(c.id)
+        self.assertEqual(c.id,    b.id)
+        self.assertEqual(c.name,  b.name)
+        self.assertEqual(c.sites, b.sites)
 
     def test_get_visitor(self):
-        c = Customer(id='demo-id')
-        v = c.get_visitor(id='demo-id')
-        self.assertIs(v.customer, c)
-        self.assertEqual(v.id, "demo-id")
-
+        # TODO test_get_visitor
+        pass
+        
     def test_is_site_owner(self):
-        c = Customer(id='demo-id')
-        self.assertTrue(c.is_site_owner("http://example.com/path"))
+        c = Customer(name='foobar', sites=["foo.com", "bar.co.uk"])
+        self.assertTrue(c.is_site_owner("http://foo.com/path"))
+        self.assertFalse(c.is_site_owner("http://bar.com/path"))
 
 
 if __name__ == "__main__":
